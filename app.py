@@ -4,6 +4,7 @@ from flask import Flask, jsonify, request
 from PIL import Image, UnidentifiedImageError
 
 from detector import detect
+from supabase_service import log_scan
 
 app = Flask(__name__)
 
@@ -32,8 +33,15 @@ def analyze():
     except RuntimeError as exc:
         return jsonify({"error": str(exc)}), 503
 
+    try:
+        user_id = request.headers.get("X-User-ID", "anonymous")
+        file_type = file.content_type or "unknown"
+        log_scan(user_id, result["verdict"], result["confidence"], result["reason"], file_type)
+    except Exception as e:
+        print(f"[supabase] logging failed: {e}")
+
     return jsonify(result)
 
 
 if __name__ == "__main__":
-    app.run(debug=True, port=5000)
+    app.run(debug=True, port=5001)
